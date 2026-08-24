@@ -1,0 +1,11 @@
+{
+  "name": "ASB Anak Tracker",
+  "short_name": "ASB Anak",
+  "description": "Rekod hutang dan bayaran balik ASB anak.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f6f2e9",
+  "theme_color": "#163934",
+  "lang": "ms",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
