@@ -1,8 +1,8 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "asb-anak-tracker",
+  "name": "asb-hutang-anak",
   "main": "dist/server/index.js",
-  "compatibility_date": "2026-08-25",
+  "compatibility_date": "2026-08-24",
   "compatibility_flags": ["nodejs_compat"],
   "assets": { "directory": "dist/client", "binding": "ASSETS" }
 }
