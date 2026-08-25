@@ -2,7 +2,15 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "asb-hutang-anak",
   "main": "dist/server/index.js",
-  "compatibility_date": "2026-08-24",
+  "compatibility_date": "2026-05-15",
   "compatibility_flags": ["nodejs_compat"],
-  "assets": { "directory": "dist/client", "binding": "ASSETS" }
+  "assets": { "directory": "dist/client", "binding": "ASSETS" },
+  "durable_objects": {
+    "bindings": [
+      { "name": "TRACKER", "class_name": "TrackerStore" }
+    ]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["TrackerStore"] }
+  ]
 }

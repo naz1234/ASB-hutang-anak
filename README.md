@@ -9,9 +9,11 @@ Aplikasi mudah alih peribadi untuk menyemak hutang dan bayaran balik ASB anak.
 - Rekod bayaran mengikut anak, tarikh, jumlah dan catatan
 - Kemas kini jumlah hutang serta sasaran bayaran bulanan
 - Padam rekod yang tersalah masuk
+- Sync rekod secara automatik antara telefon, tablet dan komputer
+- Pautan sync peribadi untuk membuka rekod yang sama pada peranti lain
 - Backup dan pulihkan data menggunakan fail JSON
 - Boleh dipasang pada skrin utama dan digunakan semula selepas lawatan pertama
-- Semua data disimpan pada peranti melalui `localStorage`
+- Salinan tempatan disimpan melalui `localStorage` supaya aplikasi masih boleh digunakan ketika offline
 
 ## Data permulaan
 
@@ -39,8 +41,10 @@ npm run dev
 4. Gunakan deploy command `npx wrangler deploy` atau terus `npm run deploy` jika Cloudflare meminta satu command sahaja.
 5. Node version: `22.13.0` atau lebih baharu.
 
-Fail `wrangler.jsonc` sudah disediakan. Aplikasi ini tidak memerlukan database, API key atau pembolehubah rahsia.
+Fail `wrangler.jsonc` sudah menyediakan Cloudflare Durable Object untuk storan kekal. Namespace storan dicipta oleh Wrangler semasa deployment pertama; tiada API key atau database manual diperlukan.
 
 ## Nota penting
 
-Data hanya berada dalam browser/peranti yang digunakan. Gunakan fungsi **Muat turun backup** dari semasa ke semasa, terutama sebelum menukar telefon atau membersihkan data browser.
+Selepas deployment baharu dibuka pada peranti asal, data lama dalam `localStorage` akan dimigrasikan ke cloud secara automatik. Buka **Tetapan → Kongsi pautan sync**, kemudian buka pautan itu pada peranti lain untuk menggunakan rekod yang sama.
+
+Pautan sync mengandungi kunci rawak peribadi. Jangan kongsi pautan tersebut dengan orang lain. Gunakan fungsi **Muat turun backup** dari semasa ke semasa sebagai salinan tambahan.

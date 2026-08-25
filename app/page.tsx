@@ -35,7 +35,11 @@ type TrackerState = {
   updatedAt: string;
 };
 
+type SyncStatus = "loading" | "saving" | "synced" | "offline";
+
 const STORAGE_KEY = "asb-anak-tracker-v1";
+const SYNC_KEY_STORAGE = "asb-anak-sync-key-v1";
+const SYNC_ENDPOINT = "/api/tracker";
 
 const DEFAULT_STATE: TrackerState = {
   children: [
@@ -56,6 +60,43 @@ const DEFAULT_STATE: TrackerState = {
   updatedAt: "2026-08-25T00:00:00.000Z",
 };
 
+function isTrackerState(value: unknown): value is TrackerState {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<TrackerState>;
+  return Array.isArray(candidate.children)
+    && candidate.children.every((child) => child
+      && typeof child.id === "string"
+      && typeof child.name === "string"
+      && typeof child.debt === "number"
+      && typeof child.monthlyTarget === "number"
+      && typeof child.withdrawalDate === "string"
+      && typeof child.color === "string")
+    && Array.isArray(candidate.payments)
+    && candidate.payments.every((payment) => payment
+      && typeof payment.id === "string"
+      && typeof payment.childId === "string"
+      && typeof payment.amount === "number"
+      && typeof payment.date === "string"
+      && typeof payment.note === "string")
+    && typeof candidate.updatedAt === "string";
+}
+
+function createSyncKey() {
+  const bytes = new Uint8Array(16);
+  window.crypto.getRandomValues(bytes);
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function saveToCloud(syncKey: string, tracker: TrackerState, signal?: AbortSignal) {
+  const response = await fetch(SYNC_ENDPOINT, {
+    method: "PUT",
+    headers: { "content-type": "application/json", "x-sync-key": syncKey },
+    body: JSON.stringify(tracker),
+    signal,
+  });
+  if (!response.ok) throw new Error(`Sync failed with ${response.status}`);
+}
+
 const iconPaths: Record<string, React.ReactNode> = {
   home: <><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></>,
   wallet: <><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H19v16H6.5A2.5 2.5 0 0 1 4 17.5z"/><path d="M4 7h15"/><path d="M15 12h6v4h-6a2 2 0 0 1 0-4Z"/></>,
@@ -66,6 +107,7 @@ const iconPaths: Record<string, React.ReactNode> = {
   arrow: <path d="m9 18 6-6-6-6"/>,
   download: <><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></>,
   upload: <><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 21h14"/></>,
+  link: <><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.1 1.1"/><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.1-1.1"/></>,
   edit: <><path d="m4 16-1 5 5-1L19 9l-4-4Z"/><path d="m13.5 6.5 4 4"/></>,
   trash: <><path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14M10 11v6M14 11v6"/></>,
   shield: <><path d="M12 3 5 6v5c0 5 3 8 7 10 4-2 7-5 7-10V6Z"/><path d="m9 12 2 2 4-4"/></>,
@@ -96,6 +138,9 @@ export default function Home() {
   const [tab, setTab] = useState<Tab>("dashboard");
   const [tracker, setTracker] = useState<TrackerState>(DEFAULT_STATE);
   const [hydrated, setHydrated] = useState(false);
+  const [syncKey, setSyncKey] = useState("");
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>("loading");
+  const [remoteReady, setRemoteReady] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [editChildId, setEditChildId] = useState<string | null>(null);
   const [toast, setToast] = useState("");
@@ -106,22 +151,103 @@ export default function Home() {
   const [childForm, setChildForm] = useState({ name: "", debt: "", monthlyTarget: "" });
 
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
+    const controller = new AbortController();
+
+    async function loadTracker() {
+      let localTracker = DEFAULT_STATE;
+      let hasLocalTracker = false;
+
       try {
         const saved = window.localStorage.getItem(STORAGE_KEY);
-        if (saved) setTracker(JSON.parse(saved) as TrackerState);
-      } catch {
-        setToast("Data simpanan tak dapat dibaca. Data asal digunakan.");
+        if (saved) {
+          const parsed: unknown = JSON.parse(saved);
+          if (isTrackerState(parsed)) {
+            localTracker = parsed;
+            hasLocalTracker = true;
+          }
+        }
+
+        const url = new URL(window.location.href);
+        const keyFromLink = url.searchParams.get("sync")?.trim().toLowerCase() ?? "";
+        const storedKey = window.localStorage.getItem(SYNC_KEY_STORAGE) ?? "";
+        const validLinkedKey = /^[a-f0-9]{32}$/.test(keyFromLink) ? keyFromLink : "";
+        const key = validLinkedKey || (/^[a-f0-9]{32}$/.test(storedKey) ? storedKey : createSyncKey());
+        const localBelongsToKey = storedKey === key;
+
+        window.localStorage.setItem(SYNC_KEY_STORAGE, key);
+        setSyncKey(key);
+
+        if (validLinkedKey) {
+          url.searchParams.delete("sync");
+          window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+        }
+
+        const response = await fetch(SYNC_ENDPOINT, {
+          headers: { "x-sync-key": key },
+          cache: "no-store",
+          signal: controller.signal,
+        });
+
+        if (response.ok) {
+          const cloudTracker: unknown = await response.json();
+          if (!isTrackerState(cloudTracker)) throw new Error("Invalid cloud data");
+
+          if (localBelongsToKey && hasLocalTracker && localTracker.updatedAt > cloudTracker.updatedAt) {
+            await saveToCloud(key, localTracker, controller.signal);
+            setTracker(localTracker);
+          } else {
+            setTracker(cloudTracker);
+            window.localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudTracker));
+          }
+          setRemoteReady(true);
+          setSyncStatus("synced");
+        } else if (response.status === 404) {
+          await saveToCloud(key, localTracker, controller.signal);
+          setTracker(localTracker);
+          setRemoteReady(true);
+          setSyncStatus("synced");
+        } else {
+          throw new Error(`Sync failed with ${response.status}`);
+        }
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        setTracker(localTracker);
+        setSyncStatus("offline");
+        setToast(error instanceof SyntaxError
+          ? "Data simpanan tak dapat dibaca. Data asal digunakan."
+          : "Cloud tidak dapat dicapai. Data masih disimpan pada peranti ini.");
       } finally {
-        setHydrated(true);
+        if (!controller.signal.aborted) setHydrated(true);
       }
-    });
-    return () => window.cancelAnimationFrame(frame);
+    }
+
+    void loadTracker();
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {
-    if (hydrated) window.localStorage.setItem(STORAGE_KEY, JSON.stringify(tracker));
-  }, [tracker, hydrated]);
+    if (!hydrated) return;
+
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(tracker));
+    } catch {}
+
+    if (!syncKey || !remoteReady) return;
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      setSyncStatus("saving");
+      saveToCloud(syncKey, tracker, controller.signal)
+        .then(() => setSyncStatus("synced"))
+        .catch(() => {
+          if (!controller.signal.aborted) setSyncStatus("offline");
+        });
+    }, 450);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [tracker, hydrated, syncKey, remoteReady]);
 
   useEffect(() => {
     if (!toast) return;
@@ -226,6 +352,39 @@ export default function Home() {
     setToast("Data asal telah dipulihkan.");
   }
 
+  async function shareSyncLink() {
+    if (!syncKey) {
+      setToast("Pautan sync belum tersedia.");
+      return;
+    }
+
+    const url = `${window.location.origin}/?sync=${syncKey}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: "ASB Anak",
+          text: "Buka pautan ini untuk gunakan rekod ASB Anak yang sama.",
+          url,
+        });
+        setToast("Pautan sync sedia dikongsi.");
+      } else {
+        await navigator.clipboard.writeText(url);
+        setToast("Pautan sync telah disalin.");
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      setToast("Pautan tidak dapat dikongsi. Cuba lagi.");
+    }
+  }
+
+  const syncLabel = syncStatus === "synced"
+    ? "Tersimpan di cloud"
+    : syncStatus === "saving"
+      ? "Sedang menyimpan…"
+      : syncStatus === "loading"
+        ? "Sedang memuatkan…"
+        : "Offline — disimpan pada peranti";
+
   const sortedPayments = [...tracker.payments].sort((a, b) => b.date.localeCompare(a.date));
 
   return (
@@ -284,17 +443,18 @@ export default function Home() {
 
         {tab === "rekod" && (
           <section className="page-section">
-            <div className="page-title with-action"><div><p className="eyebrow">Semua transaksi</p><h2>Rekod bayaran</h2><p>{tracker.payments.length} rekod disimpan dalam telefon ini.</p></div><button className="square-add" onClick={() => openPayment()} aria-label="Tambah rekod"><Icon name="plus" size={22}/></button></div>
+            <div className="page-title with-action"><div><p className="eyebrow">Semua transaksi</p><h2>Rekod bayaran</h2><p>{tracker.payments.length} rekod • {syncLabel}</p></div><button className="square-add" onClick={() => openPayment()} aria-label="Tambah rekod"><Icon name="plus" size={22}/></button></div>
             {sortedPayments.length ? <div className="history-card">{sortedPayments.map((payment) => { const child = tracker.children.find((item) => item.id === payment.childId); if (!child) return null; return <div className="history-row" key={payment.id}><span className="history-icon" style={{ "--child-color": child.color } as CSSProperties}><Icon name="check" size={17}/></span><span className="history-copy"><strong>{child.name}</strong><small>{payment.note} • {dateLabel(payment.date)}</small></span><span className="history-amount"><strong>+{money(payment.amount).replace("RM ", "RM")}</strong><button onClick={() => deletePayment(payment.id)} aria-label="Padam rekod"><Icon name="trash" size={16}/></button></span></div>; })}</div> : <div className="empty-state"><span><Icon name="list" size={28}/></span><h3>Belum ada bayaran</h3><p>Tambah bayaran pertama untuk mula menjejak.</p><button className="primary-button" onClick={() => openPayment()}>Tambah bayaran</button></div>}
           </section>
         )}
 
         {tab === "tetapan" && (
           <section className="page-section">
-            <div className="page-title"><p className="eyebrow">Kawalan data</p><h2>Tetapan</h2><p>Semua rekod disimpan secara peribadi pada peranti anda.</p></div>
+            <div className="page-title"><p className="eyebrow">Kawalan data</p><h2>Tetapan</h2><p>Rekod disimpan di cloud dan pada peranti ini.</p></div>
             <div className="settings-group"><p className="group-label">Hutang & sasaran</p><div className="settings-card">{tracker.children.map((child) => <button className="setting-row" key={child.id} onClick={() => openEditChild(child)}><span className="avatar" style={{ "--child-color": child.color } as CSSProperties}>{child.name.charAt(0)}</span><span><strong>{child.name}</strong><small>{money(child.debt)} • {money(child.monthlyTarget)}/bulan</small></span><Icon name="arrow" size={18}/></button>)}</div></div>
+            <div className="settings-group"><p className="group-label">Sync peranti</p><div className="settings-card"><button className="setting-row" onClick={() => void shareSyncLink()}><span className="setting-icon blue"><Icon name="link" size={19}/></span><span><strong>Kongsi pautan sync</strong><small>Buka pautan pada peranti lain</small></span><Icon name="arrow" size={18}/></button></div></div>
             <div className="settings-group"><p className="group-label">Backup data</p><div className="settings-card"><button className="setting-row" onClick={exportBackup}><span className="setting-icon green"><Icon name="download" size={19}/></span><span><strong>Muat turun backup</strong><small>Simpan salinan fail JSON</small></span><Icon name="arrow" size={18}/></button><button className="setting-row" onClick={() => importRef.current?.click()}><span className="setting-icon blue"><Icon name="upload" size={19}/></span><span><strong>Pulihkan backup</strong><small>Import fail yang disimpan</small></span><Icon name="arrow" size={18}/></button><input ref={importRef} type="file" accept="application/json" hidden onChange={importBackup}/></div></div>
-            <div className="privacy-note"><Icon name="shield" size={22}/><span><strong>Data kekal pada peranti</strong><small>Tiada maklumat dihantar ke bank atau pelayan luar.</small></span></div>
+            <div className="privacy-note"><Icon name="shield" size={22}/><span><strong>{syncLabel}</strong><small>Pautan sync ialah kunci peribadi. Kongsi hanya dengan peranti anda sendiri.</small></span></div>
             <button className="danger-button" onClick={resetData}>Pulihkan data asal</button>
             <p className="source-note">Data permulaan: pengeluaran pada 16 Februari 2026. Rekod Tasneem dan Naurah dimasukkan daripada chat anda; sejarah bayaran Azra boleh ditambah sendiri.</p>
           </section>
