@@ -385,7 +385,18 @@ export default function Home() {
         ? "Sedang memuatkan…"
         : "Offline — disimpan pada peranti";
 
-  const sortedPayments = [...tracker.payments].sort((a, b) => b.date.localeCompare(a.date));
+  const childNameById = new Map(tracker.children.map((child) => [child.id, child.name]));
+  const sortedPayments = [...tracker.payments].sort((a, b) => {
+    const nameOrder = (childNameById.get(a.childId) ?? "").localeCompare(
+      childNameById.get(b.childId) ?? "",
+      "ms",
+      { sensitivity: "base" },
+    );
+    if (nameOrder !== 0) return nameOrder;
+
+    const dateOrder = b.date.localeCompare(a.date);
+    return dateOrder !== 0 ? dateOrder : b.id.localeCompare(a.id);
+  });
 
   return (
     <div className="app-shell">
