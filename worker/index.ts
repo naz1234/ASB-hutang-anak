@@ -55,6 +55,7 @@ type TrackerState = {
 };
 
 const TRACKER_STORAGE_KEY = "tracker";
+const SHARED_TRACKER_NAME = "shared-family-record-v1";
 const JSON_HEADERS = {
   "cache-control": "no-store",
   "content-type": "application/json; charset=utf-8",
@@ -100,9 +101,10 @@ function isTrackerState(value: unknown): value is TrackerState {
     && typeof payment.note === "string" && payment.note.length <= 500);
 }
 
-function validSyncKey(request: Request) {
+function trackerName(request: Request) {
   const key = request.headers.get("x-sync-key")?.trim().toLowerCase() ?? "";
-  return /^[a-f0-9]{32}$/.test(key) ? key : null;
+  if (!key) return SHARED_TRACKER_NAME;
+  return /^[a-f0-9]{32}$/.test(key) ? SHARED_TRACKER_NAME : null;
 }
 
 export class TrackerStore {
@@ -145,11 +147,11 @@ const worker = {
     const url = new URL(request.url);
 
     if (url.pathname === "/api/tracker") {
-      const syncKey = validSyncKey(request);
-      if (!syncKey) return json({ error: "Missing or invalid sync key" }, 401);
+      const name = trackerName(request);
+      if (!name) return json({ error: "Invalid sync key" }, 401);
       if (!env.TRACKER) return json({ error: "Tracker storage is unavailable" }, 503);
 
-      const id = env.TRACKER.idFromName(syncKey);
+      const id = env.TRACKER.idFromName(name);
       return env.TRACKER.get(id).fetch(request);
     }
 
