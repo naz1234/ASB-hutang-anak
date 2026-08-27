@@ -1,50 +1,50 @@
-# ASB Anak Tracker
+# ASB Kids Tracker
 
-Aplikasi mudah alih peribadi untuk menyemak hutang dan bayaran balik ASB anak.
+A mobile app for tracking children's ASB debts and repayments. The interface, date labels, app descriptions, and new default payment notes are in English. Currency remains Malaysian ringgit (RM).
 
-## Fungsi utama
+## Features
 
-- Dashboard jumlah hutang, jumlah dibayar dan baki semasa
-- Checklist bayaran untuk bulan semasa
-- Rekod bayaran mengikut anak, tarikh, jumlah dan catatan
-- Kemas kini jumlah hutang serta sasaran bayaran bulanan
-- Padam rekod yang tersalah masuk
-- Sync rekod secara automatik antara telefon, tablet dan komputer
-- Pautan sync peribadi untuk membuka rekod yang sama pada peranti lain
-- Backup dan pulihkan data menggunakan fail JSON
-- Boleh dipasang pada skrin utama dan digunakan semula selepas lawatan pertama
-- Salinan tempatan disimpan melalui `localStorage` supaya aplikasi masih boleh digunakan ketika offline
+- Dashboard showing total debt, total paid, and the current balance
+- Payment checklist for the current month
+- Payment records by child, date, amount, and note
+- Editable debts and monthly payment targets
+- Delete payment records entered by mistake
+- Automatic saving across phones, tablets, and computers
+- A sync link for opening the same records on another device
+- Backup and restore using JSON files
+- Install on the home screen and reopen after the first visit
+- A local copy in `localStorage` for offline use
 
-## Data permulaan
+## Initial data
 
-- Tasneem: hutang asal RM4,600; bayaran direkod RM2,446
-- Azra: hutang asal RM4,000; sejarah bayaran belum dimasukkan
-- Naurah: hutang asal RM8,000; bayaran direkod RM2,446
-- Tarikh pengeluaran: 16 Februari 2026
+- Tasneem: original debt RM4,600; recorded payments RM2,446
+- Azra: original debt RM4,000; payment history not yet added
+- Naurah: original debt RM8,000; recorded payments RM2,446
+- Withdrawal date: 16 February 2026
 
-Nilai ini boleh diedit terus dalam halaman **Tetapan**.
+These values can be edited on the **Settings** page. Existing saved names, payment notes, amounts, and dates are preserved when upgrading to the English interface.
 
-## Jalankan di komputer
+## Run locally
 
-Keperluan: Node.js 22.13 atau lebih baharu.
+Requires Node.js 22.13 or later.
 
 ```bash
 npm ci
 npm run dev
 ```
 
-## Sambung GitHub ke Cloudflare
+## Connect GitHub to Cloudflare
 
-1. Extract ZIP ini dan upload semua kandungan projek ke repository GitHub.
-2. Di Cloudflare, pilih **Workers & Pages** kemudian sambungkan repository tersebut.
-3. Gunakan build command `npm run build`.
-4. Gunakan deploy command `npx wrangler deploy` atau terus `npm run deploy` jika Cloudflare meminta satu command sahaja.
-5. Node version: `22.13.0` atau lebih baharu.
+1. Upload the project contents to a GitHub repository.
+2. In Cloudflare, select **Workers & Pages** and connect the repository.
+3. Use `npm run build` as the build command.
+4. Use `npx wrangler deploy` as the deploy command, or `npm run deploy` if Cloudflare asks for a single command.
+5. Set the Node.js version to `22.13.0` or later.
 
-Fail `wrangler.jsonc` sudah menyediakan Cloudflare Durable Object untuk storan kekal. Namespace storan dicipta oleh Wrangler semasa deployment pertama; tiada API key atau database manual diperlukan.
+The `wrangler.jsonc` file configures a Cloudflare Durable Object for persistent storage. Wrangler creates the storage namespace during the first deployment; no manual database setup or API key is required.
 
-## Nota penting
+## Saving and backups
 
-Selepas deployment baharu dibuka pada peranti asal, data lama dalam `localStorage` akan dimigrasikan ke cloud secara automatik. Buka **Tetapan → Kongsi pautan sync**, kemudian buka pautan itu pada peranti lain untuk menggunakan rekod yang sama.
+After opening the updated app on the original device, existing `localStorage` data is migrated to cloud storage automatically. All devices use the same shared family record. You can also open **Settings → Share sync link** to open the app on another device.
 
-Pautan sync mengandungi kunci rawak peribadi. Jangan kongsi pautan tersebut dengan orang lain. Gunakan fungsi **Muat turun backup** dari semasa ke semasa sebagai salinan tambahan.
+Keep the app and sync link within your family. Use **Download backup** occasionally to keep an extra copy.

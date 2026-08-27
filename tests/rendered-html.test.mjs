@@ -10,7 +10,7 @@ async function loadWorker() {
 const context = { waitUntil() {}, passThroughOnException() {} };
 const assets = { fetch: async () => new Response("Not found", { status: 404 }) };
 
-test("renders ASB Anak Tracker metadata", async () => {
+test("renders the dashboard and app metadata in English", async () => {
   const { default: worker } = await loadWorker();
   const response = await worker.fetch(
     new Request("http://localhost/", { headers: { accept: "text/html" } }),
@@ -19,12 +19,19 @@ test("renders ASB Anak Tracker metadata", async () => {
   );
   assert.equal(response.status, 200);
   const html = await response.text();
-  assert.match(html, /<title>ASB Anak Tracker<\/title>/i);
-  assert.match(html, /ASB Anak/);
+  assert.match(html, /<html lang="en"/i);
+  assert.match(html, /<title>ASB Kids Tracker<\/title>/i);
+  assert.match(html, /Main navigation/);
+  for (const label of ["Home", "Debts", "Records", "Settings", "Total balance", "Total paid", "Withdrawal date", "Debt by child"]) {
+    assert.ok(html.includes(label), `Expected English label: ${label}`);
+  }
+  const currentMonth = new Intl.DateTimeFormat("en-MY", { month: "long", year: "numeric" }).format(new Date());
+  assert.ok(html.includes(currentMonth));
+  assert.doesNotMatch(html, /Baki keseluruhan|Sudah dibayar|Tarikh ambil|Navigasi utama|lang="ms"/);
   assert.doesNotMatch(html, /Starter Project/);
 });
 
-test("persists tracker data through the sync API", async () => {
+test("preserves existing Malay notes and payment data through the sync API", async () => {
   const { default: worker, TrackerStore } = await loadWorker();
   let stored;
   const store = new TrackerStore({

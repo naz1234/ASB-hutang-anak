@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title description">
+  <title id="title">ASB Kids Tracker</title>
+  <desc id="description">Track debts. Check payments. Peace of mind.</desc>
+  <rect width="1200" height="630" fill="#163934"/>
+  <circle cx="1110" cy="40" r="340" fill="#1c4740"/>
+  <circle cx="80" cy="650" r="230" fill="#1c4740"/>
+  <rect x="68" y="94" width="64" height="64" rx="18" fill="#9be15d"/>
+  <path d="m84 126 11 11 23-26" fill="none" stroke="#163934" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="68" y="278" fill="#f6f2e9" font-family="DejaVu Sans, sans-serif" font-size="60" font-weight="700">ASB Kids Tracker</text>
+  <text x="70" y="346" fill="#d6eab8" font-family="DejaVu Sans, sans-serif" font-size="28">Track debts. Check payments.</text>
+  <text x="70" y="390" fill="#d6eab8" font-family="DejaVu Sans, sans-serif" font-size="28">Peace of mind.</text>
+  <rect x="768" y="94" width="358" height="442" rx="34" fill="#f6f2e9"/>
+  <text x="802" y="151" fill="#163934" font-family="DejaVu Sans, sans-serif" font-size="22" font-weight="700">Payment progress</text>
+  <rect x="802" y="183" width="290" height="14" rx="7" fill="#e2e5da"/>
+  <rect x="802" y="183" width="197" height="14" rx="7" fill="#9be15d"/>
+  <g fill="#e8f8d8">
+    <rect x="802" y="241" width="48" height="48" rx="14"/>
+    <rect x="802" y="333" width="48" height="48" rx="14"/>
+    <rect x="802" y="425" width="48" height="48" rx="14"/>
+  </g>
+  <g fill="none" stroke="#163934" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m814 264 8 8 16-17"/>
+    <path d="m814 356 8 8 16-17"/>
+    <path d="m814 448 8 8 16-17"/>
+  </g>
+  <g fill="#c3cec2">
+    <rect x="873" y="250" width="163" height="9" rx="4.5"/>
+    <rect x="873" y="274" width="114" height="7" rx="3.5"/>
+    <rect x="873" y="342" width="163" height="9" rx="4.5"/>
+    <rect x="873" y="366" width="114" height="7" rx="3.5"/>
+    <rect x="873" y="434" width="163" height="9" rx="4.5"/>
+    <rect x="873" y="458" width="114" height="7" rx="3.5"/>
+  </g>
+</svg>
