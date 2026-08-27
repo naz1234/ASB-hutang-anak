@@ -1,4 +1,4 @@
-const CACHE = "asb-anak-tracker-v2";
+const CACHE = "asb-anak-tracker-v3-en";
 const CORE = ["/", "/manifest.webmanifest", "/favicon.svg"];
 
 self.addEventListener("install", (event) => {
