@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 async function loadWorker() {
@@ -22,6 +23,10 @@ test("renders the dashboard and app metadata in English", async () => {
   assert.match(html, /<html lang="en"/i);
   assert.match(html, /<title>ASB Kids Tracker<\/title>/i);
   assert.match(html, /Main navigation/);
+  const favicon = html.match(/<link[^>]*rel="icon"[^>]*>/)?.[0];
+  const appleIcon = html.match(/<link[^>]*rel="apple-touch-icon"[^>]*>/)?.[0];
+  assert.match(favicon ?? "", /href="\/icons\/asb-anak-32\.png"/);
+  assert.match(appleIcon ?? "", /href="\/icons\/asb-anak-180\.png"/);
   for (const label of ["Home", "Debts", "Records", "Settings", "Total balance", "Total paid", "Withdrawal date", "Debt by child"]) {
     assert.ok(html.includes(label), `Expected English label: ${label}`);
   }
@@ -29,6 +34,20 @@ test("renders the dashboard and app metadata in English", async () => {
   assert.ok(html.includes(currentMonth));
   assert.doesNotMatch(html, /Baki keseluruhan|Sudah dibayar|Tarikh ambil|Navigasi utama|lang="ms"/);
   assert.doesNotMatch(html, /Starter Project/);
+});
+
+test("ships PNG artwork at the sizes required by the icon links and manifest", async () => {
+  const manifest = JSON.parse(await readFile(new URL("../dist/client/manifest.webmanifest", import.meta.url), "utf8"));
+  const icons = [
+    { src: "/icons/asb-anak-32.png", sizes: "32x32" },
+    { src: "/icons/asb-anak-180.png", sizes: "180x180" },
+    ...manifest.icons,
+  ];
+  for (const icon of icons) {
+    const png = await readFile(new URL(`../dist/client${icon.src}`, import.meta.url));
+    assert.deepEqual(png.subarray(0, 8), Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+    assert.equal(`${png.readUInt32BE(16)}x${png.readUInt32BE(20)}`, icon.sizes);
+  }
 });
 
 test("preserves existing Malay notes and payment data through the sync API", async () => {
