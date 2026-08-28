@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import {
   type ChangeEvent,
   type CSSProperties,
@@ -36,6 +37,17 @@ type TrackerState = {
 };
 
 type SyncStatus = "loading" | "saving" | "synced" | "offline";
+
+// Restyle the original palette without changing saved records or custom colours.
+const CHILD_THEME_COLORS: Record<string, string> = {
+  "#9be15d": "#33b995",
+  "#ffbd59": "#ec8fbd",
+  "#79c7ff": "#b398db",
+};
+
+function childStyle(color: string): CSSProperties {
+  return { "--child-color": CHILD_THEME_COLORS[color.toLowerCase()] ?? color } as CSSProperties;
+}
 
 const STORAGE_KEY = "asb-anak-tracker-v1";
 const SYNC_KEY_STORAGE = "asb-anak-sync-key-v1";
@@ -112,6 +124,8 @@ const iconPaths: Record<string, React.ReactNode> = {
   trash: <><path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14M10 11v6M14 11v6"/></>,
   shield: <><path d="M12 3 5 6v5c0 5 3 8 7 10 4-2 7-5 7-10V6Z"/><path d="m9 12 2 2 4-4"/></>,
   close: <path d="m6 6 12 12M18 6 6 18"/>,
+  heart: <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/>,
+  sparkle: <path d="m12 2 3 7 7 3-7 3-3 7-3-7-7-3 7-3Z"/>,
 };
 
 function Icon({ name, size = 20 }: { name: string; size?: number }) {
@@ -401,7 +415,7 @@ export default function Home() {
   return (
     <div className="app-shell">
       <header className="topbar">
-        <div className="brand-mark" aria-hidden="true"><span>✓</span></div>
+        <div className="brand-mark" aria-hidden="true"><Image src="/icons/asb-anak-180.png" alt="" width={60} height={60} unoptimized loading="eager"/></div>
         <div><p className="eyebrow">Personal records</p><h1>ASB Kids</h1></div>
         <button className="add-top" onClick={() => openPayment()} aria-label="Add payment"><Icon name="plus" size={22}/></button>
       </header>
@@ -410,8 +424,9 @@ export default function Home() {
         {tab === "dashboard" && (
           <section className="page-section">
             <div className="hero-card">
-              <div><p className="hero-label">Total balance</p><strong className="hero-amount">{money(totalRemaining)}</strong><p className="hero-sub">of {money(totalDebt)} withdrawn</p></div>
-              <div className="progress-ring" style={{ "--progress": `${overallPercent * 3.6}deg` } as CSSProperties}><span>{overallPercent}%</span><small>repaid</small></div>
+              <div className="hero-heading"><span className="hero-kicker"><Icon name="heart" size={14}/> Family savings</span><span className="hero-sparkle" aria-hidden="true"><Icon name="sparkle" size={22}/></span></div>
+              <div className="hero-balance"><p className="hero-label">Total balance</p><strong className="hero-amount">{money(totalRemaining)}</strong><p className="hero-sub">of {money(totalDebt)} withdrawn</p></div>
+              <div className="progress-ring" role="img" aria-label={`${overallPercent}% repaid`} style={{ "--progress": `${overallPercent * 3.6}deg` } as CSSProperties}><span>{overallPercent}%</span><small>repaid</small></div>
               <div className="hero-stats"><div><span>Total paid</span><strong>{money(totalPaid)}</strong></div><div><span>Withdrawal date</span><strong>16 Feb 2026</strong></div></div>
             </div>
 
@@ -420,7 +435,7 @@ export default function Home() {
               {tracker.children.map((child) => {
                 const monthTotal = currentMonthPaid.filter((payment) => payment.childId === child.id).reduce((sum, payment) => sum + payment.amount, 0);
                 const complete = monthTotal >= child.monthlyTarget;
-                return <button key={child.id} className="check-row" onClick={() => openPayment(child.id)}><span className={`check-box ${complete ? "complete" : ""}`}><Icon name={complete ? "check" : "plus"} size={17}/></span><span className="avatar" style={{ "--child-color": child.color } as CSSProperties}>{child.name.charAt(0)}</span><span className="check-copy"><strong>{child.name}</strong><small>{complete ? `${money(monthTotal)} recorded` : `Target ${money(child.monthlyTarget)}`}</small></span><span className={complete ? "status paid" : "status due"}>{complete ? "Done" : "Due"}</span></button>;
+                return <button key={child.id} className="check-row" onClick={() => openPayment(child.id)}><span className={`check-box ${complete ? "complete" : ""}`}><Icon name={complete ? "check" : "plus"} size={17}/></span><span className="avatar" style={childStyle(child.color)}>{child.name.charAt(0)}</span><span className="check-copy"><strong>{child.name}</strong><small>{complete ? `${money(monthTotal)} recorded` : `Target ${money(child.monthlyTarget)}`}</small></span><span className={complete ? "status paid" : "status due"}>{complete ? "Done" : "Due"}</span></button>;
               })}
             </div>
 
@@ -432,7 +447,7 @@ export default function Home() {
                 const paid = paidByChild[child.id] ?? 0;
                 const remaining = Math.max(child.debt - paid, 0);
                 const percent = Math.min(Math.round((paid / child.debt) * 100), 100);
-                return <button key={child.id} className="child-card" onClick={() => setTab("hutang")} style={{ "--child-color": child.color } as CSSProperties}><span className="avatar large">{child.name.charAt(0)}</span><span className="child-main"><span className="child-line"><strong>{child.name}</strong><b>{money(remaining)}</b></span><span className="mini-progress"><i style={{ width: `${percent}%` }}/></span><span className="child-line muted"><small>{percent}% paid</small><small>Balance</small></span></span></button>;
+                return <button key={child.id} className="child-card" onClick={() => setTab("hutang")} style={childStyle(child.color)}><span className="avatar large">{child.name.charAt(0)}</span><span className="child-main"><span className="child-line"><strong>{child.name}</strong><b>{money(remaining)}</b></span><span className="mini-progress"><i style={{ width: `${percent}%` }}/></span><span className="child-line muted"><small>{percent}% paid</small><small>Balance</small></span></span></button>;
               })}
             </div>
           </section>
@@ -446,7 +461,7 @@ export default function Home() {
                 const paid = paidByChild[child.id] ?? 0;
                 const remaining = Math.max(child.debt - paid, 0);
                 const percent = Math.min(Math.round((paid / child.debt) * 100), 100);
-                return <article className="debt-card" key={child.id} style={{ "--child-color": child.color } as CSSProperties}><div className="debt-top"><span className="avatar xlarge">{child.name.charAt(0)}</span><div><p>ASB • {dateLabel(child.withdrawalDate)}</p><h3>{child.name}</h3></div><button className="icon-button" onClick={() => openEditChild(child)} aria-label={`Edit ${child.name}`}><Icon name="edit" size={18}/></button></div><div className="balance-block"><span>Current balance</span><strong>{money(remaining)}</strong></div><div className="progress-meta"><span>{money(paid)} paid</span><span>{percent}%</span></div><div className="debt-progress"><i style={{ width: `${percent}%` }}/></div><div className="debt-info"><div><span>Original amount</span><strong>{money(child.debt)}</strong></div><div><span>Monthly target</span><strong>{money(child.monthlyTarget)}</strong></div></div><button className="primary-button full" onClick={() => openPayment(child.id)}><Icon name="plus" size={19}/> Record payment</button></article>;
+                return <article className="debt-card" key={child.id} style={childStyle(child.color)}><div className="debt-top"><span className="avatar xlarge">{child.name.charAt(0)}</span><div><p>ASB • {dateLabel(child.withdrawalDate)}</p><h3>{child.name}</h3></div><button className="icon-button" onClick={() => openEditChild(child)} aria-label={`Edit ${child.name}`}><Icon name="edit" size={18}/></button></div><div className="balance-block"><span>Current balance</span><strong>{money(remaining)}</strong></div><div className="progress-meta"><span>{money(paid)} paid</span><span>{percent}%</span></div><div className="debt-progress"><i style={{ width: `${percent}%` }}/></div><div className="debt-info"><div><span>Original amount</span><strong>{money(child.debt)}</strong></div><div><span>Monthly target</span><strong>{money(child.monthlyTarget)}</strong></div></div><button className="primary-button full" onClick={() => openPayment(child.id)}><Icon name="plus" size={19}/> Record payment</button></article>;
               })}
             </div>
           </section>
@@ -455,14 +470,14 @@ export default function Home() {
         {tab === "rekod" && (
           <section className="page-section">
             <div className="page-title with-action"><div><p className="eyebrow">All transactions</p><h2>Payment records</h2><p>{tracker.payments.length} records • {syncLabel}</p></div><button className="square-add" onClick={() => openPayment()} aria-label="Add record"><Icon name="plus" size={22}/></button></div>
-            {sortedPayments.length ? <div className="history-card">{sortedPayments.map((payment) => { const child = tracker.children.find((item) => item.id === payment.childId); if (!child) return null; return <div className="history-row" key={payment.id}><span className="history-icon" style={{ "--child-color": child.color } as CSSProperties}><Icon name="check" size={17}/></span><span className="history-copy"><strong>{child.name}</strong><small>{payment.note} • {dateLabel(payment.date)}</small></span><span className="history-amount"><strong>+{money(payment.amount).replace("RM ", "RM")}</strong><button onClick={() => deletePayment(payment.id)} aria-label="Delete record"><Icon name="trash" size={16}/></button></span></div>; })}</div> : <div className="empty-state"><span><Icon name="list" size={28}/></span><h3>No payments yet</h3><p>Add your first payment to start tracking.</p><button className="primary-button" onClick={() => openPayment()}>Add payment</button></div>}
+            {sortedPayments.length ? <div className="history-card">{sortedPayments.map((payment) => { const child = tracker.children.find((item) => item.id === payment.childId); if (!child) return null; return <div className="history-row" key={payment.id}><span className="history-icon" style={childStyle(child.color)}><Icon name="check" size={17}/></span><span className="history-copy"><strong>{child.name}</strong><small>{payment.note} • {dateLabel(payment.date)}</small></span><span className="history-amount"><strong>+{money(payment.amount).replace("RM ", "RM")}</strong><button onClick={() => deletePayment(payment.id)} aria-label="Delete record"><Icon name="trash" size={16}/></button></span></div>; })}</div> : <div className="empty-state"><span><Icon name="list" size={28}/></span><h3>No payments yet</h3><p>Add your first payment to start tracking.</p><button className="primary-button" onClick={() => openPayment()}>Add payment</button></div>}
           </section>
         )}
 
         {tab === "tetapan" && (
           <section className="page-section">
             <div className="page-title"><p className="eyebrow">Data management</p><h2>Settings</h2><p>Records are saved in the cloud and on this device.</p></div>
-            <div className="settings-group"><p className="group-label">Debts & targets</p><div className="settings-card">{tracker.children.map((child) => <button className="setting-row" key={child.id} onClick={() => openEditChild(child)}><span className="avatar" style={{ "--child-color": child.color } as CSSProperties}>{child.name.charAt(0)}</span><span><strong>{child.name}</strong><small>{money(child.debt)} • {money(child.monthlyTarget)}/month</small></span><Icon name="arrow" size={18}/></button>)}</div></div>
+            <div className="settings-group"><p className="group-label">Debts & targets</p><div className="settings-card">{tracker.children.map((child) => <button className="setting-row" key={child.id} onClick={() => openEditChild(child)}><span className="avatar" style={childStyle(child.color)}>{child.name.charAt(0)}</span><span><strong>{child.name}</strong><small>{money(child.debt)} • {money(child.monthlyTarget)}/month</small></span><Icon name="arrow" size={18}/></button>)}</div></div>
             <div className="settings-group"><p className="group-label">Device sync</p><div className="settings-card"><button className="setting-row" onClick={() => void shareSyncLink()}><span className="setting-icon blue"><Icon name="link" size={19}/></span><span><strong>Share sync link</strong><small>Open the link on another device</small></span><Icon name="arrow" size={18}/></button></div></div>
             <div className="settings-group"><p className="group-label">Data backup</p><div className="settings-card"><button className="setting-row" onClick={exportBackup}><span className="setting-icon green"><Icon name="download" size={19}/></span><span><strong>Download backup</strong><small>Save a copy as a JSON file</small></span><Icon name="arrow" size={18}/></button><button className="setting-row" onClick={() => importRef.current?.click()}><span className="setting-icon blue"><Icon name="upload" size={19}/></span><span><strong>Restore backup</strong><small>Import a saved file</small></span><Icon name="arrow" size={18}/></button><input ref={importRef} type="file" accept="application/json" hidden onChange={importBackup}/></div></div>
             <div className="privacy-note"><Icon name="shield" size={22}/><span><strong>{syncLabel}</strong><small>Keep your sync link private. Only share it with your own devices.</small></span></div>
@@ -473,7 +488,7 @@ export default function Home() {
       </main>
 
       <nav className="bottom-nav" aria-label="Main navigation">
-        {([["dashboard", "home", "Home"], ["hutang", "wallet", "Debts"], ["rekod", "list", "Records"], ["tetapan", "settings", "Settings"]] as [Tab, string, string][]).map(([value, icon, label]) => <button key={value} className={tab === value ? "active" : ""} onClick={() => setTab(value)}><Icon name={icon} size={21}/><span>{label}</span></button>)}
+        {([["dashboard", "home", "Home"], ["hutang", "wallet", "Debts"], ["rekod", "list", "Records"], ["tetapan", "settings", "Settings"]] as [Tab, string, string][]).map(([value, icon, label]) => <button key={value} className={tab === value ? "active" : ""} aria-current={tab === value ? "page" : undefined} onClick={() => setTab(value)}><Icon name={icon} size={21}/><span>{label}</span></button>)}
       </nav>
 
       {paymentOpen && <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setPaymentOpen(false); }}><form className="modal-sheet" onSubmit={addPayment}><div className="sheet-handle"/><div className="modal-title"><div><p className="eyebrow">New transaction</p><h2>Record payment</h2></div><button type="button" onClick={() => setPaymentOpen(false)} aria-label="Close"><Icon name="close" size={21}/></button></div><label><span>Child name</span><select value={paymentForm.childId} onChange={(event) => { const child = tracker.children.find((item) => item.id === event.target.value); setPaymentForm((form) => ({ ...form, childId: event.target.value, amount: child ? String(child.monthlyTarget) : form.amount })); }}>{tracker.children.map((child) => <option value={child.id} key={child.id}>{child.name}</option>)}</select></label><label><span>Payment amount (RM)</span><input inputMode="decimal" type="number" min="0.01" step="0.01" value={paymentForm.amount} onChange={(event) => setPaymentForm((form) => ({ ...form, amount: event.target.value }))} required/></label><label><span>Date</span><input type="date" value={paymentForm.date} onChange={(event) => setPaymentForm((form) => ({ ...form, date: event.target.value }))} required/></label><label><span>Note</span><input type="text" value={paymentForm.note} onChange={(event) => setPaymentForm((form) => ({ ...form, note: event.target.value }))} placeholder="Example: August payment"/></label><button className="primary-button full tall" type="submit"><Icon name="check" size={20}/> Save payment</button></form></div>}

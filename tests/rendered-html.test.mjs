@@ -11,7 +11,7 @@ async function loadWorker() {
 const context = { waitUntil() {}, passThroughOnException() {} };
 const assets = { fetch: async () => new Response("Not found", { status: 404 }) };
 
-test("renders the dashboard and app metadata in English", async () => {
+test("renders the English dashboard with the ASB artwork and accessible navigation", async () => {
   const { default: worker } = await loadWorker();
   const response = await worker.fetch(
     new Request("http://localhost/", { headers: { accept: "text/html" } }),
@@ -27,6 +27,10 @@ test("renders the dashboard and app metadata in English", async () => {
   const appleIcon = html.match(/<link[^>]*rel="apple-touch-icon"[^>]*>/)?.[0];
   assert.match(favicon ?? "", /href="\/icons\/asb-anak-32\.png"/);
   assert.match(appleIcon ?? "", /href="\/icons\/asb-anak-180\.png"/);
+  const header = html.match(/<header\b[^>]*>[\s\S]*?<\/header>/)?.[0] ?? "";
+  assert.match(header, /<img\b[^>]*src="\/icons\/asb-anak-180\.png"/);
+  assert.match(html, /aria-current="page"[^>]*>[\s\S]*?<span>Home<\/span>/);
+  assert.match(html, /role="img" aria-label="\d+% repaid"/);
   for (const label of ["Home", "Debts", "Records", "Settings", "Total balance", "Total paid", "Withdrawal date", "Debt by child"]) {
     assert.ok(html.includes(label), `Expected English label: ${label}`);
   }
