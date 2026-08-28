@@ -4,8 +4,8 @@
   "description": "Track children's ASB debts and repayments.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f6f2e9",
-  "theme_color": "#163934",
+  "background_color": "#e8f8f0",
+  "theme_color": "#e8f8f0",
   "lang": "en",
   "icons": [
     { "src": "/icons/asb-anak-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
