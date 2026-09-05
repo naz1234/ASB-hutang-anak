@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { groupPaymentsByChild } from "./payment-groups";
 import {
   type ChangeEvent,
   type CSSProperties,
@@ -399,18 +400,7 @@ export default function Home() {
         ? "Loading…"
         : "Offline — saved on this device";
 
-  const childNameById = new Map(tracker.children.map((child) => [child.id, child.name]));
-  const sortedPayments = [...tracker.payments].sort((a, b) => {
-    const nameOrder = (childNameById.get(a.childId) ?? "").localeCompare(
-      childNameById.get(b.childId) ?? "",
-      "en-MY",
-      { sensitivity: "base" },
-    );
-    if (nameOrder !== 0) return nameOrder;
-
-    const dateOrder = b.date.localeCompare(a.date);
-    return dateOrder !== 0 ? dateOrder : b.id.localeCompare(a.id);
-  });
+  const paymentGroups = groupPaymentsByChild(tracker.children, tracker.payments);
 
   return (
     <div className="app-shell">
@@ -470,7 +460,35 @@ export default function Home() {
         {tab === "rekod" && (
           <section className="page-section">
             <div className="page-title with-action"><div><p className="eyebrow">All transactions</p><h2>Payment records</h2><p>{tracker.payments.length} records • {syncLabel}</p></div><button className="square-add" onClick={() => openPayment()} aria-label="Add record"><Icon name="plus" size={22}/></button></div>
-            {sortedPayments.length ? <div className="history-card">{sortedPayments.map((payment) => { const child = tracker.children.find((item) => item.id === payment.childId); if (!child) return null; return <div className="history-row" key={payment.id}><span className="history-icon" style={childStyle(child.color)}><Icon name="check" size={17}/></span><span className="history-copy"><strong>{child.name}</strong><small>{payment.note} • {dateLabel(payment.date)}</small></span><span className="history-amount"><strong>+{money(payment.amount).replace("RM ", "RM")}</strong><button onClick={() => deletePayment(payment.id)} aria-label="Delete record"><Icon name="trash" size={16}/></button></span></div>; })}</div> : <div className="empty-state"><span><Icon name="list" size={28}/></span><h3>No payments yet</h3><p>Add your first payment to start tracking.</p><button className="primary-button" onClick={() => openPayment()}>Add payment</button></div>}
+            <div className="history-groups">
+              {paymentGroups.map(({ child, payments, total }) => (
+                <section className="history-group" key={child.id} style={childStyle(child.color)} aria-label={`${child.name} payment records`}>
+                  <header className="history-group-header">
+                    <span className="avatar large">{child.name.charAt(0)}</span>
+                    <span className="history-group-copy">
+                      <strong>{child.name}</strong>
+                      <small>{payments.length} {payments.length === 1 ? "payment" : "payments"}</small>
+                    </span>
+                    <span className="history-group-total">
+                      <small>Total paid</small>
+                      <strong>{money(total)}</strong>
+                    </span>
+                  </header>
+                  {payments.length ? payments.map((payment) => (
+                    <div className="history-row" key={payment.id}>
+                      <span className="history-icon"><Icon name="check" size={17}/></span>
+                      <span className="history-copy"><strong>{payment.note}</strong><small>{dateLabel(payment.date)}</small></span>
+                      <span className="history-amount">
+                        <strong>+{money(payment.amount).replace("RM ", "RM")}</strong>
+                        <button onClick={() => deletePayment(payment.id)} aria-label={`Delete ${payment.note} for ${child.name}`}><Icon name="trash" size={16}/></button>
+                      </span>
+                    </div>
+                  )) : (
+                    <div className="history-empty"><Icon name="list" size={20}/><span><strong>No payments yet</strong><small>Tap + to add the first payment.</small></span></div>
+                  )}
+                </section>
+              ))}
+            </div>
           </section>
         )}
 

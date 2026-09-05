@@ -72,7 +72,7 @@ svg { flex-shrink: 0; }
 .section-heading h2, .page-title h2, .modal-title h2 { margin: 0; font: 800 20px/1.2 "Manrope", sans-serif; letter-spacing: -.5px; }
 .count-pill { min-width: 42px; min-height: 28px; padding: 0 10px; display: grid; place-items: center; border-radius: 999px; background: var(--pink-soft); border: 1px solid white; color: var(--plum); font-size: 12px; font-weight: 700; }
 
-.checklist-card, .history-card, .settings-card { border-radius: 24px; overflow: hidden; background: var(--paper); border: 1px solid var(--line); box-shadow: var(--shadow); }
+.checklist-card, .settings-card { border-radius: 24px; overflow: hidden; background: var(--paper); border: 1px solid var(--line); box-shadow: var(--shadow); }
 .check-row { width: 100%; min-height: 72px; padding: 14px; background: transparent; display: flex; align-items: center; gap: 10px; text-align: left; }
 .check-row + .check-row, .history-row + .history-row, .setting-row + .setting-row { border-top: 1px solid var(--line); }
 .check-box { width: 28px; height: 28px; border-radius: 10px; border: 1.5px solid #c7d6d0; background: #f7fcf9; display: grid; place-items: center; color: #5b7e70; flex: 0 0 auto; }
@@ -132,13 +132,27 @@ svg { flex-shrink: 0; }
 .primary-button.full { width: 100%; }
 .primary-button.tall { min-height: 50px; border-radius: 17px; margin-top: 4px; }
 
-.history-row { min-height: 74px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; }
+.history-groups { display: grid; gap: 17px; }
+.history-group { --child-color: var(--mint); overflow: hidden; border: 1px solid var(--line); border-top: 4px solid var(--child-color); border-radius: 25px; background: var(--paper); box-shadow: var(--shadow); }
+.history-group-header { min-height: 82px; padding: 14px; display: flex; align-items: center; gap: 11px; background: color-mix(in srgb, var(--child-color) 13%, white); border-bottom: 1px solid color-mix(in srgb, var(--child-color) 22%, var(--line)); }
+.history-group-header .avatar, .history-group .history-icon { --child-color: inherit; }
+.history-group-copy { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.history-group-copy strong { font: 800 17px/1.25 "Manrope", sans-serif; overflow-wrap: anywhere; }
+.history-group-copy small, .history-group-total small { margin-top: 3px; color: var(--ink-soft); font-size: 10px; }
+.history-group-total { max-width: 126px; display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
+.history-group-total strong { margin-top: 4px; color: var(--green-deep); font: 800 14px/1.25 "Manrope", sans-serif; overflow-wrap: anywhere; }
+.history-row { min-height: 76px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; }
 .history-icon { --child-color: var(--mint); width: 36px; height: 36px; border-radius: 13px; display: grid; place-items: center; color: var(--ink); background: color-mix(in srgb, var(--child-color) 28%, white); flex: 0 0 auto; }
 .history-copy { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .history-copy small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .history-amount { display: flex; align-items: center; gap: 3px; flex-shrink: 0; }
 .history-amount strong { font: 800 12px/1.2 "Manrope", sans-serif; color: var(--green-deep); }
 .history-amount button { width: 44px; height: 44px; border-radius: 13px; display: grid; place-items: center; background: transparent; color: var(--danger); }
+.history-empty { min-height: 76px; padding: 14px 16px; display: flex; align-items: center; gap: 11px; color: var(--ink-soft); }
+.history-empty > svg { color: var(--child-color); }
+.history-empty > span { display: flex; flex-direction: column; }
+.history-empty strong { color: var(--ink); font-size: 12px; }
+.history-empty small { margin-top: 3px; font-size: 10px; }
 .empty-state { min-height: 330px; padding: 50px 25px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .empty-state > span { width: 60px; height: 60px; border: 2px solid white; border-radius: 21px; display: grid; place-items: center; background: var(--lavender-soft); color: var(--plum); }
 .empty-state h3 { margin: 18px 0 6px; font: 800 18px/1.2 "Manrope", sans-serif; }
